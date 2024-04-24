@@ -155,11 +155,27 @@ let add a b env =
        | Error -> [Error; a; b]
        | Integer i -> [Integer (i + j)]
        | _ -> [Error; a; b])
-   | Name n1, Name n2 -> let _ = print_env env in
+   | Name n1, Name n2 ->
       (match get env n1, get env n2 with
        | Error, _ -> [Error; a; b]
        | _, Error -> [Error; a; b]
        | Integer i, Integer j -> [Integer (i + j)]
+       | _ -> [Error; a; b])
+   | _ -> [Error; a; b]
+
+let cat a b env =
+   match a, b with
+   | String i, String j -> [String (j ^ i)]
+   | Name name, String j ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | String i -> [String (j ^ i)]
+       | _ -> [Error; a; b])
+   | Name n1, Name n2 ->
+      (match get env n1, get env n2 with
+       | Error, _ -> [Error; a; b]
+       | _, Error -> [Error; a; b]
+       | String i, String j -> [String (j ^ i)]
        | _ -> [Error; a; b])
    | _ -> [Error; a; b]
 
@@ -170,7 +186,18 @@ let sub a b env =
 
 let mul a b env =
    match a, b with
-   | Integer i, Integer j -> [Integer (j * i)]
+   | Integer i, Integer j -> [Integer (i * j)]
+   | Name name, Integer j ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | Integer i -> [Integer (i * j)]
+       | _ -> [Error; a; b])
+   | Name n1, Name n2 ->
+      (match get env n1, get env n2 with
+       | Error, _ -> [Error; a; b]
+       | _, Error -> [Error; a; b]
+       | Integer i, Integer j -> [Integer (i * j)]
+       | _ -> [Error; a; b])
    | _ -> [Error; a; b]
 
 let div a b env =
@@ -186,6 +213,11 @@ let rem a b env =
 let neg a env =
    match a with
    | Integer i -> [Integer (-i)]
+   | Name name ->
+      (match get env name with
+       | Error -> [Error; a]
+       | Integer i -> [Integer (-i)]
+       | _ -> [Error; a])
    | _ -> [Error; a]
 
 let op_and a b env =
@@ -200,6 +232,17 @@ let op_or a b env =
    | _, Bool true -> [Bool true]
    | Bool true, _ -> [Bool true]
    | Bool false, Bool false -> [Bool false]
+   | Name name, Bool false ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | Bool i -> [Bool i]
+       | _ -> [Error; a; b])
+   | Name n1, Name n2 ->
+      (match get env n1, get env n2 with
+       | Error, _ -> [Error; a; b]
+       | _, Error -> [Error; a; b]
+       | Bool i, Bool j -> [Bool (i || j)]
+       | _ -> [Error; a; b])
    | _ -> [Error; a; b]
 
 let op_not a env =
@@ -221,6 +264,14 @@ let less_than a b env =
 let bind a b env =
    match a, b with
    | Integer i, Name name -> ([Unit], (name, a) :: env)
+   | String s, Name name -> ([Unit], (name, a) :: env)
+   | Unit, Name name -> ([Unit], (name, a) :: env)
+   | Bool _, Name name -> ([Unit], (name, a) :: env)
+   | Error, Name name -> ([Unit], (name, a) :: env)
+   | Name n1, Name n2 ->
+      (match get env n1 with
+       | Error -> ([Error; a; b], env)
+       | v -> ([Unit], (n2, v) :: env))
    | _ -> ([Error; a; b], env)
 
 let cmd_if a b c env =
@@ -230,96 +281,101 @@ let cmd_if a b c env =
    | _ -> [Error; a; b; c]
 
 let rec execute commands stack env oc =
-   match commands with
-   | [] -> stack
-   | (Push stack_value) :: tl -> execute tl (stack_value :: stack) env oc
-   | Pop :: tl ->
+   match Stream.next commands with
+   (* | [] -> stack *)
+   | (Push stack_value) -> execute commands (stack_value :: stack) env oc
+   | Pop ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | shd :: stl -> execute tl stl env oc)
-   | Add :: tl ->
+       | [] -> execute commands [Error] env oc
+       | shd :: stl -> execute commands stl env oc)
+   | Add ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((add a b env) @ stl) env oc)
-   | Sub :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((add a b env) @ stl) env oc)
+   | Sub ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((sub a b env) @ stl) env oc)
-   | Mul :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((sub a b env) @ stl) env oc)
+   | Mul ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((mul a b env) @ stl) env oc)
-   | Div :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((mul a b env) @ stl) env oc)
+   | Div ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((div a b env) @ stl) env oc)
-   | Rem :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((div a b env) @ stl) env oc)
+   | Rem ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((rem a b env) @ stl) env oc)
-   | Neg :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((rem a b env) @ stl) env oc)
+   | Neg ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | shd :: stl -> execute tl ((neg shd env) @ stl) env oc)
-   | Not :: tl ->
+       | [] -> execute commands [Error] env oc
+       | shd :: stl -> execute commands ((neg shd env) @ stl) env oc)
+   | Not ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | shd :: stl -> execute tl ((op_not shd env) @ stl) env oc)
-   | Swap :: tl ->
+       | [] -> execute commands [Error] env oc
+       | shd :: stl -> execute commands ((op_not shd env) @ stl) env oc)
+   | Swap ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl (b :: a :: stl) env oc)
-   | And :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands (b :: a :: stl) env oc)
+   | And ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((op_and a b env) @ stl) env oc)
-   | Or :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((op_and a b env) @ stl) env oc)
+   | Or ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((op_or a b env) @ stl) env oc)
-   | Equal :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((op_or a b env) @ stl) env oc)
+   | Equal ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((equal a b env) @ stl) env oc)
-   | LessThan :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((equal a b env) @ stl) env oc)
+   | LessThan ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | a :: b :: stl -> execute tl ((less_than a b env) @ stl) env oc)
-   | Println :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((less_than a b env) @ stl) env oc)
+   | Cat ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | shd :: stl -> let _ = output_string (stackvalue_to_string shd) oc in execute tl stl env oc)
-   | ToString :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | a :: b :: stl -> execute commands ((cat a b env) @ stl) env oc)
+   | Println ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | shd :: stl -> execute tl ((String (stackvalue_to_string shd)) :: stl) env oc)
-   | Bind :: tl ->
+       | [] -> execute commands [Error] env oc
+       | shd :: stl -> let _ = output_string (stackvalue_to_string shd) oc in execute commands stl env oc)
+   | ToString ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
+       | [] -> execute commands [Error] env oc
+       | shd :: stl -> execute commands ((String (stackvalue_to_string shd)) :: stl) env oc)
+   | Bind ->
+      (match stack with
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
        | k :: v :: stl ->
          let (res, new_env) = bind k v env in
-         execute tl (res @ stl) new_env oc)
-   | If :: tl ->
+         execute commands (res @ stl) new_env oc)
+   | If ->
       (match stack with
-       | [] -> execute tl [Error] env oc
-       | [v] -> execute tl [Error; v] env oc
-       | [a; b] -> execute tl [Error; a; b] env oc
-       | a :: b :: c :: stl -> execute tl ((cmd_if a b c env) @ stl) env oc)
-   | Let :: tl ->
-      let new_env = env in let res = execute tl [] new_env oc in
-      execute tl (res @ stack) env oc
-   | End :: tl ->
+       | [] -> execute commands [Error] env oc
+       | [v] -> execute commands [Error; v] env oc
+       | [a; b] -> execute commands [Error; a; b] env oc
+       | a :: b :: c :: stl -> execute commands ((cmd_if a b c env) @ stl) env oc)
+   | Let ->
+      let res = execute commands [] env oc in
+      execute commands (res @ stack) env oc
+   | End ->
       (match stack with
        | [] -> [Error]
        | shd :: _ -> [shd])
@@ -340,15 +396,8 @@ let interpreter (input, output) =
   in
   let com_list = List.map string_to_command string_list
   in
-  let rec print_com_list = function
-    | [] -> ()
-    | hd :: tl ->
-      let _ = print_string (command_to_string hd) in
-      let _ = print_string "\n" in
-      print_com_list tl
-    in
-  let _ = print_com_list com_list in
-  let _ = execute com_list [] [] oc in
+  let command_stream = Stream.of_list com_list in
+  let _ = execute command_stream [] [] oc in
   ()
 
 let () = interpreter ("input.txt", "output.txt")

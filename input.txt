@@ -1,34 +1,41 @@
-push "str1"
-push str1
-push str1
-push 1
-pop
-push 3
-pop
-let
-push 5
-end
-pop
-let
-push c
-push 17
-bind
-let
-push a
+push :unit:
 push 3
 bind
 push a
-push c
+push 9
+bind
+let
+push a
+push 15
+bind
+push b
+push 305
+bind
+push a
+push 10
 add
 end
-let
-push b
-push "ronaldo"
+push a
+push 10
+add
+push "a"
+push 3
 bind
-end
-end
-push 30
-push 40
+push b
+push a
+add
+toString
+println
+toString
+println
+toString
+println
+toString
+println
+toString
+println
+toString
+println
 toString
 println
 toString
