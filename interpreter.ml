@@ -84,7 +84,7 @@ let stackvalue_to_string = function
   | Unit -> ":unit:"
   | String s -> s
   | Integer i -> string_of_int i
-  | Name name -> "Name: " ^ name
+  | Name name -> name
   | Error -> ":error:"
   | FunDef (name, _, _) -> "FunDef " ^ name
   | InOutFunDef (name, _, _) -> "InOutFunDef " ^ name 
@@ -388,7 +388,7 @@ let rec parse_fundef cmds acc =
    | FunEnd -> acc
    | cmd -> cmd :: parse_fundef cmds acc
 
-let rec execute commands stack env oc =
+let rec execute commands stack env oc = try
    match Stream.next commands with
    (* | [] -> stack *)
    | (Push stack_value) -> execute commands (stack_value :: stack) env oc
@@ -479,17 +479,17 @@ let rec execute commands stack env oc =
        | [] -> execute commands [Error] env oc
        | [v] -> execute commands [Error; v] env oc
        | [a; b] -> execute commands [Error; a; b] env oc
-       | a :: b :: c :: stl -> execute commands ((cmd_if a b c env) @ stl) env oc)
+       | a :: b :: c :: stl ->
+         execute commands ((cmd_if a b c env) @ stl) env oc)
    | Let ->
-      let res = execute commands [] env oc in
+      let (res, env) = execute commands [] env oc in
       execute commands (res @ stack) env oc
    | End ->
       (match stack with
-       | [] -> [Error]
-       | shd :: _ -> [shd])
+       | [] -> ([Error], env)
+       | shd :: _ -> ([shd], env))
    | Fun (name, arg) ->
       let block = parse_fundef commands [] in
-      let _ = print_command_list block in
       let new_env = (name, FunDef (name, arg, block)) :: env in
       execute commands (Unit :: stack) new_env oc
    | InOutFun (name, arg) ->
@@ -506,23 +506,28 @@ let rec execute commands stack env oc =
        | _ -> execute commands (Error :: stack) env oc)
    | Return ->
       (match stack with
-       | [] -> [Error]
-       | hd::_ -> [hd])
-   | _ -> [Error]
+       | [] -> ([Error], env)
+       | shd :: _ -> ([shd], env))
+   | _ -> ([Error], env)
+   with _ -> (stack, env)
 
 and execute_funcall funname param env oc =
    match get env funname with
    | FunDef (name, arg, body) ->
       let new_env = (arg, param) :: env in
-      let res = execute (Stream.of_list body) [] new_env oc in
+      let (res, new_env) = execute (Stream.of_list body) [] new_env oc in
       (match res with
       | [v] -> (v, env)
       | _ -> (Error, env))
    | InOutFunDef (name, arg, body) ->
-      let new_env = (arg, param) :: env in
-      let res = execute (Stream.of_list body) [] new_env oc in
-      (match res, param with
-      | [v], Name new_arg -> (v, (new_arg, get new_env arg) :: env)
+      (match param with
+      | Name n ->
+         let new_env = (arg, get env n) :: env in
+         let (res, new_env) = execute (Stream.of_list body) [] new_env oc in
+         let _ = print_stackvalue_list res in
+         (match res with
+         | [v] -> (v, (n, get new_env arg) :: new_env)
+         | _ -> (Error, env))
       | _ -> (Error, env))
    | _ -> (Error, env)
 

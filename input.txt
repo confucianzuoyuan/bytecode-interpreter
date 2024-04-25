@@ -1,22 +1,32 @@
-inOutFun sin theta
-push theta
-push 0
-push theta
-equal
-push 0
-push 1
-if
+let
+push y
+push 10
 bind
-funEnd
+inOutFun fun1 x
 push x
-push 90
-bind
-push sin
-push x
-call
 push x
 push x
 add
+bind
+return
+funEnd
+push fun1
+push y
+call
+push y
+push 1
+add
+end
+push y
+push 10
+bind
+push fun1
+push y
+call
+toString
+println
+toString
+println
 toString
 println
 toString
