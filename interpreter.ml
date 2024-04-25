@@ -1,13 +1,15 @@
 let output_string s oc = Printf.fprintf oc "%s\n" s
 
-type stackValue = 
+type environment = (string * stackValue) list
+
+and stackValue = 
   | Bool of bool
   | Integer of int
   | Error
   | String of string
   | Name of string
   | Unit
-  | FunDef of string * string * command list
+  | FunDef of string * string * command list * environment
   | InOutFunDef of string * string * command list
 
 and command =
@@ -86,7 +88,7 @@ let stackvalue_to_string = function
   | Integer i -> string_of_int i
   | Name name -> name
   | Error -> ":error:"
-  | FunDef (name, _, _) -> "FunDef " ^ name
+  | FunDef (name, _, _, _) -> "FunDef " ^ name
   | InOutFunDef (name, _, _) -> "InOutFunDef " ^ name 
 
 let command_to_string = function
@@ -495,7 +497,7 @@ let rec execute commands stack env oc = try
        | shd :: _ -> ([shd], env))
    | Fun (name, arg) ->
       let block = parse_fundef commands [] in
-      let new_env = (name, FunDef (name, arg, block)) :: env in
+      let new_env = (name, FunDef (name, arg, block, env)) :: env in
       execute commands (Unit :: stack) new_env oc
    | InOutFun (name, arg) ->
       let block = parse_fundef commands [] in
@@ -520,8 +522,13 @@ let rec execute commands stack env oc = try
 
 and execute_funcall funname param env oc =
    match get env funname with
-   | FunDef (name, arg, body) ->
-      let new_env = (arg, param) :: env in
+   | FunDef (name, arg, body, closure) ->
+      let arg_value = match param with
+      | Name n -> get env n
+      | _ -> param
+      in
+      let new_env = [(arg, arg_value)] @ closure @ env in
+      let _ = print_env new_env in
       let (res, new_env) = execute (Stream.of_list body) [] new_env oc in
       (match res with
       | [v] -> (v, env)
