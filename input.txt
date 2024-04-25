@@ -1,27 +1,20 @@
-let
-push y
-push 10
+push x
+push 3
 bind
-inOutFun fun1 x
+fun addX arg
 push x
-push x
-push x
+push arg
 add
-bind
 return
 funEnd
-push fun1
-push y
-call
-push y
-push 1
-add
-end
-push y
-push 10
+push x
+push 5
 bind
-push fun1
-push y
+push a
+push 3
+bind
+push addX
+push a
 call
 toString
 println

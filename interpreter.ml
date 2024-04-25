@@ -381,6 +381,11 @@ let cmd_if a b c env =
    match c with
    | Bool true -> [a]
    | Bool false -> [b]
+   | Name name ->
+      (match get env name with
+      | Bool true -> [a]
+      | Bool false -> [b]
+      | _ -> [Error; a; b; c])
    | _ -> [Error; a; b; c]
 
 let rec parse_fundef cmds acc =
@@ -482,7 +487,7 @@ let rec execute commands stack env oc = try
        | a :: b :: c :: stl ->
          execute commands ((cmd_if a b c env) @ stl) env oc)
    | Let ->
-      let (res, env) = execute commands [] env oc in
+      let (res, _) = execute commands [] env oc in
       execute commands (res @ stack) env oc
    | End ->
       (match stack with
@@ -502,13 +507,15 @@ let rec execute commands stack env oc = try
        | [v] -> execute commands [Error; v] env oc
        | param :: (Name name) :: tl ->
          let (res, new_env) = execute_funcall name param env oc in
-         execute commands (res :: tl) new_env oc
+         (match res with
+         | Error -> execute commands (Error :: stack) new_env oc
+         | _ -> execute commands (res :: tl) new_env oc)
        | _ -> execute commands (Error :: stack) env oc)
    | Return ->
       (match stack with
-       | [] -> ([Error], env)
+       | [] -> (stack, env)
        | shd :: _ -> ([shd], env))
-   | _ -> ([Error], env)
+   | _ -> (stack, env)
    with _ -> (stack, env)
 
 and execute_funcall funname param env oc =
@@ -524,7 +531,6 @@ and execute_funcall funname param env oc =
       | Name n ->
          let new_env = (arg, get env n) :: env in
          let (res, new_env) = execute (Stream.of_list body) [] new_env oc in
-         let _ = print_stackvalue_list res in
          (match res with
          | [v] -> (v, (n, get new_env arg) :: new_env)
          | _ -> (Error, env))
