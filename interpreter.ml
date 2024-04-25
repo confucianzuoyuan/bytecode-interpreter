@@ -155,6 +155,11 @@ let add a b env =
        | Error -> [Error; a; b]
        | Integer i -> [Integer (i + j)]
        | _ -> [Error; a; b])
+   | Integer i, Name name ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | Integer j -> [Integer (i + j)]
+       | _ -> [Error; a; b])
    | Name n1, Name n2 ->
       (match get env n1, get env n2 with
        | Error, _ -> [Error; a; b]
@@ -170,6 +175,11 @@ let cat a b env =
       (match get env name with
        | Error -> [Error; a; b]
        | String i -> [String (j ^ i)]
+       | _ -> [Error; a; b])
+   | String i, Name name ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | String j -> [String (j ^ i)]
        | _ -> [Error; a; b])
    | Name n1, Name n2 ->
       (match get env n1, get env n2 with
@@ -225,6 +235,17 @@ let op_and a b env =
    | _, Bool false -> [Bool false]
    | Bool false, _ -> [Bool false]
    | Bool true, Bool true -> [Bool true]
+   | Name name, Bool true ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | Bool i -> [Bool i]
+       | _ -> [Error; a; b])
+   | Name n1, Name n2 ->
+      (match get env n1, get env n2 with
+       | Error, _ -> [Error; a; b]
+       | _, Error -> [Error; a; b]
+       | Bool i, Bool j -> [Bool (i && j)]
+       | _ -> [Error; a; b])
    | _ -> [Error; a; b]
 
 let op_or a b env =
@@ -232,6 +253,11 @@ let op_or a b env =
    | _, Bool true -> [Bool true]
    | Bool true, _ -> [Bool true]
    | Bool false, Bool false -> [Bool false]
+   | Bool false, Name name ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | Bool i -> [Bool i]
+       | _ -> [Error; a; b])
    | Name name, Bool false ->
       (match get env name with
        | Error -> [Error; a; b]
@@ -259,6 +285,22 @@ let equal a b env =
 let less_than a b env =
    match a, b with
    | Integer i, Integer j -> if i > j then [Bool true] else [Bool false]
+   | Name name, Integer j ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | Integer i -> [Bool (i > j)]
+       | _ -> [Error; a; b])
+   | Integer i, Name name ->
+      (match get env name with
+       | Error -> [Error; a; b]
+       | Integer j -> [Bool (i > j)]
+       | _ -> [Error; a; b])
+   | Name n1, Name n2 ->
+      (match get env n1, get env n2 with
+       | Error, _ -> [Error; a; b]
+       | _, Error -> [Error; a; b]
+       | Integer i, Integer j -> [Bool (i > j)]
+       | _ -> [Error; a; b])
    | _ -> [Error; a; b]
 
 let bind a b env =
@@ -267,7 +309,6 @@ let bind a b env =
    | String s, Name name -> ([Unit], (name, a) :: env)
    | Unit, Name name -> ([Unit], (name, a) :: env)
    | Bool _, Name name -> ([Unit], (name, a) :: env)
-   | Error, Name name -> ([Unit], (name, a) :: env)
    | Name n1, Name n2 ->
       (match get env n1 with
        | Error -> ([Error; a; b], env)
@@ -281,6 +322,7 @@ let cmd_if a b c env =
    | _ -> [Error; a; b; c]
 
 let rec execute commands stack env oc =
+   let _ = print_env env in 
    match Stream.next commands with
    (* | [] -> stack *)
    | (Push stack_value) -> execute commands (stack_value :: stack) env oc
