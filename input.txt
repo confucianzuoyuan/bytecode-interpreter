@@ -1,59 +1,22 @@
-push awef
-push 10
-pop
-push -40
-pop
-push "equal lessThan if are:  "
-push "commands!"
-cat
-push a
-push 13
+inOutFun sin theta
+push theta
+push 0
+push theta
+equal
+push 0
+push 1
+if
 bind
-push b
-push 15
+funEnd
+push x
+push 90
 bind
-push IsUnit
-swap
-bind
-push a
-push b
-mul
-push 110
-lessThan
-push FALSEmaybe
-swap
-bind
-push FALSEmaybe
-push :false:
-or
-push "FALSEmaybe is"
-push IsUnit
-push -15
-bind
-pop
-push IsUnit
-neg
-push "5 :false: :error: are:  "
-push "constants!"
-cat
-push 22
-push 33
-toString
-println
-toString
-println
-toString
-println
-toString
-println
-toString
-println
-toString
-println
-toString
-println
-toString
-println
+push sin
+push x
+call
+push x
+push x
+add
 toString
 println
 toString
