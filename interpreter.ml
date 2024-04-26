@@ -603,6 +603,8 @@ let interpreter (input, output) =
   in
   let command_stream = Stream.of_list com_list in
   let _ = execute command_stream [] [] oc in
+  let _ = close_in ic in
+  let _ = close_out oc in
   ()
 
 let () = interpreter ("input.txt", "output.txt")
