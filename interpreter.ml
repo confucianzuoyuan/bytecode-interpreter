@@ -606,5 +606,44 @@ let interpreter (input, output) =
   let _ = close_in ic in
   let _ = close_out oc in
   ()
+;;
 
-let () = interpreter ("input.txt", "output.txt")
+(* 以下代码不要提交，用来测试 *)
+let () = interpreter ("./Part1/input1.txt", "./Part1/output1.txt") in
+let () = interpreter ("./Part1/input2.txt", "./Part1/output2.txt") in
+let () = interpreter ("./Part1/input3.txt", "./Part1/output3.txt") in
+let () = interpreter ("./Part1/input4.txt", "./Part1/output4.txt") in
+let () = interpreter ("./Part1/input5.txt", "./Part1/output5.txt") in
+let () = interpreter ("./Part1/input6.txt", "./Part1/output6.txt") in
+let () = interpreter ("./Part1/input7.txt", "./Part1/output7.txt") in
+let () = interpreter ("./Part1/input8.txt", "./Part1/output8.txt") in
+let () = interpreter ("./Part1/input9.txt", "./Part1/output9.txt") in
+let () = interpreter ("./Part1/input10.txt", "./Part1/output10.txt") in
+
+let () = interpreter ("./Part2/input1.txt", "./Part2/output1.txt") in
+let () = interpreter ("./Part2/input2.txt", "./Part2/output2.txt") in
+let () = interpreter ("./Part2/input3.txt", "./Part2/output3.txt") in
+let () = interpreter ("./Part2/input4.txt", "./Part2/output4.txt") in
+let () = interpreter ("./Part2/input5.txt", "./Part2/output5.txt") in
+let () = interpreter ("./Part2/input6.txt", "./Part2/output6.txt") in
+let () = interpreter ("./Part2/input7.txt", "./Part2/output7.txt") in
+let () = interpreter ("./Part2/input8.txt", "./Part2/output8.txt") in
+let () = interpreter ("./Part2/input9.txt", "./Part2/output9.txt") in
+let () = interpreter ("./Part2/input10.txt", "./Part2/output10.txt") in
+let () = interpreter ("./Part2/input11.txt", "./Part2/output11.txt") in
+let () = interpreter ("./Part2/input12.txt", "./Part2/output12.txt") in
+let () = interpreter ("./Part2/input13.txt", "./Part2/output13.txt") in
+let () = interpreter ("./Part2/input14.txt", "./Part2/output14.txt") in
+let () = interpreter ("./Part2/input15.txt", "./Part2/output15.txt") in
+
+let () = interpreter ("./Part3/input1.txt", "./Part3/output1.txt") in
+let () = interpreter ("./Part3/input2.txt", "./Part3/output2.txt") in
+let () = interpreter ("./Part3/input3.txt", "./Part3/output3.txt") in
+let () = interpreter ("./Part3/input4.txt", "./Part3/output4.txt") in
+let () = interpreter ("./Part3/input5.txt", "./Part3/output5.txt") in
+let () = interpreter ("./Part3/input6.txt", "./Part3/output6.txt") in
+let () = interpreter ("./Part3/input7.txt", "./Part3/output7.txt") in
+let () = interpreter ("./Part3/input8.txt", "./Part3/output8.txt") in
+let () = interpreter ("./Part3/input9.txt", "./Part3/output9.txt") in
+let () = interpreter ("./Part3/input10.txt", "./Part3/output10.txt") in
+()
